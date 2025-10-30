@@ -6,7 +6,7 @@ import { elements } from './elements.js';
 import type { StateManager } from '../state/stateManager.js';
 import type { ApiClient } from '../api/apiClient.js';
 import { config } from '../config.js';
-import type { SyncedLyricLine } from '@shared/types/index.js';
+import type { LyricsResponse, PlayerState, SyncedLyricLine } from '@shared/types/index.js';
 import { debugLog } from '../utils/logger.js';
 
 export class LyricsUI {
@@ -14,6 +14,9 @@ export class LyricsUI {
   private syncedLyricsData: SyncedLyricLine[] | null = null;
   private lyricsUpdateInterval: number | null = null;
   private currentActiveLyricIndex = -1;
+  private lastPrefetchedTrackKey: string | null = null;
+  private readonly lyricsCache = new Map<string, LyricsResponse | null>();
+  private readonly pendingFetches = new Map<string, Promise<LyricsResponse | null>>();
 
   constructor(
     private stateManager: StateManager,
@@ -60,6 +63,26 @@ export class LyricsUI {
   }
 
   /**
+   * Handle state updates to detect track changes
+   */
+  handleStateUpdate(state: PlayerState | null): void {
+    const artist = state?.video?.author;
+    const title = state?.video?.title;
+
+    if (!artist || !title) {
+      return;
+    }
+
+    const trackKey = this.createTrackKey(artist, title);
+    if (this.lastPrefetchedTrackKey === trackKey) {
+      return;
+    }
+
+    this.lastPrefetchedTrackKey = trackKey;
+    void this.prefetchLyrics(artist, title);
+  }
+
+  /**
    * Show YouTube Music fallback link
    */
   private showYouTubeMusicFallback(message: string): void {
@@ -103,7 +126,7 @@ export class LyricsUI {
     }
 
     // Don't reload if same track
-    const trackKey = `${artist}:${title}`;
+    const trackKey = this.createTrackKey(artist, title);
     if (this.currentTrackKey === trackKey && elements.lyricsPanel.classList.contains('active')) {
       return;
     }
@@ -126,7 +149,7 @@ export class LyricsUI {
 
     // Fetch lyrics from API
     debugLog('[LyricsUI] Loading lyrics for:', artist, '-', title);
-    const result = await this.apiClient.getLyrics(artist, title);
+    const result = await this.getLyricsWithCache(artist, title);
 
     if (!result) {
       debugLog('[LyricsUI] No lyrics found');
@@ -196,6 +219,54 @@ export class LyricsUI {
       const currentTime = state.player.videoProgress || 0;
       this.updateActiveLyric(currentTime);
     }, config.ui.lyricsUpdateInterval);
+  }
+
+  /**
+   * Build consistent cache key
+   */
+  private createTrackKey(artist: string, title: string): string {
+    return `${artist.trim().toLowerCase()}::${title.trim().toLowerCase()}`;
+  }
+
+  /**
+   * Prefetch lyrics for upcoming track changes
+   */
+  private async prefetchLyrics(artist: string, title: string): Promise<void> {
+    debugLog('[LyricsUI] Prefetch lyrics for:', artist, '-', title);
+    await this.getLyricsWithCache(artist, title);
+  }
+
+  /**
+   * Get lyrics, using eager cache if available
+   */
+  private async getLyricsWithCache(artist: string, title: string): Promise<LyricsResponse | null> {
+    const trackKey = this.createTrackKey(artist, title);
+
+    if (this.lyricsCache.has(trackKey)) {
+      debugLog('[LyricsUI] Using cached lyrics for:', artist, '-', title);
+      return this.lyricsCache.get(trackKey) ?? null;
+    }
+
+    if (this.pendingFetches.has(trackKey)) {
+      return this.pendingFetches.get(trackKey)!;
+    }
+
+    const fetchPromise = this.apiClient
+      .getLyrics(artist, title)
+      .then((result) => {
+        this.pendingFetches.delete(trackKey);
+        this.lyricsCache.set(trackKey, result);
+        return result;
+      })
+      .catch((error) => {
+        this.pendingFetches.delete(trackKey);
+        console.error('[LyricsUI] Failed to fetch lyrics:', error);
+        this.lyricsCache.set(trackKey, null);
+        return null;
+      });
+
+    this.pendingFetches.set(trackKey, fetchPromise);
+    return fetchPromise;
   }
 
   /**
