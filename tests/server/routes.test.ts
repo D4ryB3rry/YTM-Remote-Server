@@ -1,13 +1,16 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import express from 'express';
-import request from 'supertest';
+import express from './helpers/expressStub.js';
+import type { Express } from 'express';
+import request from '../support/supertest/index.js';
 import { setupRoutes } from '../../src/server/routes.js';
 import { PlaylistCache } from '../../src/server/cache/playlistCache.js';
 import type { PlayerState, Playlist } from '../../src/shared/types/index.js';
 import type { LyricsResult } from '../../src/server/lyrics/lyricsFetcher.js';
 
+type ExpressApp = ReturnType<typeof express>;
+
 interface TestContext {
-  app: express.Express;
+  app: ExpressApp;
   authManager: {
     isAuthenticated: ReturnType<typeof mock>;
     clearToken: ReturnType<typeof mock>;
@@ -56,7 +59,7 @@ function createTestApp(overrides: Partial<TestContext> = {}): TestContext {
     } as LyricsResult)),
   };
 
-  const app = express();
+  const app = express() as unknown as Express;
   app.use(express.json());
 
   setupRoutes(
@@ -330,16 +333,23 @@ describe('server routes', () => {
   });
 
   it('returns 500 when lyrics fetch fails', async () => {
-    const ctx = createTestApp({
-      lyricsFetcher: {
-        fetch: mock(async () => {
-          throw new Error('boom');
-        }),
-      },
-    });
+    const originalConsoleError = console.error;
+    console.error = mock(() => {}) as unknown as typeof console.error;
 
-    const res = await request(ctx.app).get('/api/lyrics?artist=A&title=B');
-    expect(res.status).toBe(500);
+    try {
+      const ctx = createTestApp({
+        lyricsFetcher: {
+          fetch: mock(async () => {
+            throw new Error('boom');
+          }),
+        },
+      });
+
+      const res = await request(ctx.app).get('/api/lyrics?artist=A&title=B');
+      expect(res.status).toBe(500);
+    } finally {
+      console.error = originalConsoleError;
+    }
   });
 
   it('returns lyrics payload on success', async () => {

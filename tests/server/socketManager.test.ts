@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, afterEach, describe, expect, test, mock, jest } from 'bun:test';
+import { beforeAll, beforeEach, afterEach, afterAll, describe, expect, test, mock, jest } from 'bun:test';
 import type { PlayerState } from '../../src/shared/types/index.js';
 
 type Spy<Args extends unknown[] = unknown[], Return = unknown> = ((
@@ -45,6 +45,8 @@ class MockSocketIOServer {
   trigger(event: string, ...args: unknown[]): void {
     this.handlers.get(event)?.(...args);
   }
+
+  close(): void {}
 }
 
 class MockClientSocket {
@@ -108,31 +110,27 @@ mock.module(lyricsFetcherModulePath, () => ({
   LyricsFetcher: MockLyricsFetcher,
 }));
 
-const configModulePath = new URL('../../src/server/config.ts', import.meta.url).href;
+const actualConfigModule = await import('../../src/server/config.ts');
+const originalSocketUrl = actualConfigModule.config.ytmDesktop.socketUrl;
+actualConfigModule.config.ytmDesktop.socketUrl = 'http://mock-ytm';
+
+const configModulePath = new URL('../../src/server/config.js', import.meta.url).href;
 mock.module(configModulePath, () => ({
-  config: {
-    cors: {},
-    ytmDesktop: {
-      socketUrl: 'http://mock-ytm',
-      progressBroadcastIntervalMs: 100,
-    },
-  },
+  config: actualConfigModule.config,
 }));
 
+const socketIOModulePath = new URL('../../src/server/socket/socketIO.ts', import.meta.url).href;
 const ioMock = createSpy<(url: string, options: unknown) => MockClientSocket>((url, options) =>
   new MockClientSocket(url, options)
 );
-mock.module('socket.io-client', () => ({
-  io: ioMock,
-  Socket: MockClientSocket,
-}));
-
-mock.module('socket.io', () => ({
-  Server: class extends MockSocketIOServer {
+mock.module(socketIOModulePath, () => ({
+  SocketIOServer: class extends MockSocketIOServer {
     constructor(httpServer: unknown, options: unknown) {
       super(httpServer, options);
     }
   },
+  SocketIOClient: ioMock,
+  ClientSocket: MockClientSocket,
 }));
 
 let SocketManager: any;
@@ -151,6 +149,10 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.useRealTimers();
+});
+
+afterAll(() => {
+  actualConfigModule.config.ytmDesktop.socketUrl = originalSocketUrl;
 });
 
 const getLatestServer = (): MockSocketIOServer => {

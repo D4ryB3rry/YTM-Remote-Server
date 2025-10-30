@@ -1,4 +1,6 @@
-import type { Express } from 'express';
+import type { IncomingMessage, ServerResponse } from 'http';
+
+type RequestHandler = (req: IncomingMessage, res: ServerResponse) => void;
 
 declare namespace SuperTest {
   interface Response {
@@ -20,5 +22,5 @@ declare namespace SuperTest {
   }
 }
 
-export default function request(app: Express): SuperTest.Request;
+export default function request(app: RequestHandler): SuperTest.Request;
 export type Response = SuperTest.Response;

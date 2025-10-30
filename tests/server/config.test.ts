@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'bun:test';
+import { describe, it, expect, afterEach, mock } from 'bun:test';
 import { createServer } from 'http';
 
 const trackedEnvKeys = [
@@ -51,26 +51,65 @@ describe('config', () => {
   it('propagates progress interval into socket manager instances', async () => {
     process.env.YTM_PROGRESS_BROADCAST_INTERVAL_MS = '333';
     const { config, query } = await loadConfigWithFreshEnv();
-    const { SocketManager } = await import(`../../src/server/socket/socketManager.ts${query}`);
+    const liveConfigModule = await import('../../src/server/config.ts');
+    const previousInterval = liveConfigModule.config.ytmDesktop.progressBroadcastIntervalMs;
+    liveConfigModule.config.ytmDesktop.progressBroadcastIntervalMs =
+      config.ytmDesktop.progressBroadcastIntervalMs;
 
-    const httpServer = createServer();
-    const authManager = {
-      getToken: () => null,
-      clearToken: () => {},
-      deleteToken: async () => {},
-    };
-    const lyricsFetcher = {
-      prefetch: () => {},
-      fetch: async () => null,
-    };
+    try {
+      const { SocketManager } = await import(`../../src/server/socket/socketManager.ts${query}`);
 
-    const manager = new SocketManager(httpServer as any, authManager as any, lyricsFetcher as any);
+      const httpServer = createServer();
+      const authManager = {
+        getToken: () => null,
+        clearToken: () => {},
+        deleteToken: async () => {},
+      };
+      const lyricsFetcher = {
+        prefetch: () => {},
+        fetch: async () => null,
+      };
 
-    expect((manager as any).progressBroadcastIntervalMs).toBe(
-      config.ytmDesktop.progressBroadcastIntervalMs
-    );
+      const manager = new SocketManager(httpServer as any, authManager as any, lyricsFetcher as any);
 
-    manager.getIO().close();
-    httpServer.close();
+      expect((manager as any).progressBroadcastIntervalMs).toBe(
+        config.ytmDesktop.progressBroadcastIntervalMs
+      );
+
+      manager.getIO().close();
+      httpServer.close();
+    } finally {
+      liveConfigModule.config.ytmDesktop.progressBroadcastIntervalMs = previousInterval;
+    }
   });
 });
+const socketIOModulePath = new URL('../../src/server/socket/socketIO.ts', import.meta.url).href;
+
+class MockSocketIOServer {
+  constructor(public readonly httpServer: unknown, public readonly options: unknown) {}
+
+  on(): this {
+    return this;
+  }
+
+  close(): void {}
+}
+
+class MockClientSocket {
+  public connected = false;
+
+  on(): this {
+    return this;
+  }
+
+  close(): void {
+    this.connected = false;
+  }
+}
+
+mock.module(socketIOModulePath, () => ({
+  SocketIOServer: MockSocketIOServer,
+  SocketIOClient: () => new MockClientSocket(),
+  ClientSocket: MockClientSocket,
+}));
+

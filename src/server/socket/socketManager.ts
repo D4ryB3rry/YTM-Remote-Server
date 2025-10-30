@@ -2,8 +2,11 @@
  * Socket.IO management for web clients and YTMDesktop connection
  */
 
-import { Server as SocketIOServer } from 'socket.io';
-import { io as SocketIOClient, Socket as ClientSocket } from 'socket.io-client';
+import {
+  SocketIOServer,
+  SocketIOClient,
+  type ClientSocket,
+} from './socketIO.js';
 import type { Server as HTTPServer } from 'http';
 import { config } from '../config.js';
 import type { AuthManager } from '../auth/authManager.js';
