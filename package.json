@@ -11,6 +11,7 @@
     "build:client": "bun build src/client/main.ts --outdir public/dist --target browser --minify",
     "start": "bun run dist/server/index.js",
     "type-check": "tsc --noEmit",
+    "test": "bun test",
     "debug": "bun run debug-cli.ts"
   },
   "keywords": [

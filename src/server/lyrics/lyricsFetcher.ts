@@ -4,6 +4,12 @@
 
 import { LyricsCache } from './lyricsCache.js';
 
+export interface LyricsFetcherOptions {
+  cache?: LyricsCache;
+  fetchFn?: typeof fetch;
+  notFoundTtlMs?: number;
+}
+
 export interface LyricsResult {
   lyrics: string;
   synced?: Array<{ time: number; text: string }>;
@@ -16,11 +22,13 @@ export class LyricsFetcher {
   private pendingFetches = new Map<string, Promise<LyricsResult | null>>();
   private notFoundTimestamps = new Map<string, number>();
   private readonly notFoundTtlMs: number;
+  private readonly fetchFn: typeof fetch;
 
-  constructor() {
-    this.cache = new LyricsCache();
+  constructor(options: LyricsFetcherOptions = {}) {
+    this.cache = options.cache ?? new LyricsCache();
+    this.fetchFn = options.fetchFn ?? fetch;
     // Avoid hammering providers for tracks without lyrics (default: 1 hour)
-    this.notFoundTtlMs = 60 * 60 * 1000;
+    this.notFoundTtlMs = options.notFoundTtlMs ?? 60 * 60 * 1000;
   }
 
   /**
@@ -99,7 +107,7 @@ export class LyricsFetcher {
   private async fetchFromLRCLib(artist: string, title: string): Promise<LyricsResult | null> {
     try {
       const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`;
-      const response = await fetch(url);
+      const response = await this.fetchFn(url);
 
       if (!response.ok) {
         console.log(`[LyricsFetcher] lrclib.net returned status ${response.status}`);
