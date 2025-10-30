@@ -4,6 +4,9 @@
   "description": "Modern web-based remote control for YouTube Music Desktop with AuthToken persistence",
   "main": "dist/server/index.js",
   "type": "module",
+  "imports": {
+    "supertest": "./tests/support/supertest/index.js"
+  },
   "scripts": {
     "dev": "bun run --watch src/server/index.ts",
     "build": "bun run build:client && bun run build:server",
@@ -11,6 +14,7 @@
     "build:client": "bun build src/client/main.ts --outdir public/dist --target browser --minify",
     "start": "bun run dist/server/index.js",
     "type-check": "tsc --noEmit",
+    "test": "bun test",
     "debug": "bun run debug-cli.ts"
   },
   "keywords": [
@@ -35,6 +39,7 @@
     "bun-types": "^1.1.38",
     "happy-dom": "file:tests/vendor/happy-dom",
     "@testing-library/dom": "file:tests/vendor/testing-library-dom",
+    "supertest": "file:tests/support/supertest",
     "typescript": "^5.7.2"
   },
   "engines": {
