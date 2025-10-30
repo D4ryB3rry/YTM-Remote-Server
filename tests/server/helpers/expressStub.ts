@@ -1,6 +1,23 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { URL } from 'url';
 
+const ensureProcessNextTick = () => {
+  const proc = globalThis.process as (NodeJS.Process & {
+    nextTick?: ((callback: (...args: unknown[]) => void, ...args: unknown[]) => void) | undefined;
+  }) | undefined;
+
+  if (!proc || typeof proc.nextTick === 'function') {
+    return;
+  }
+
+  // Bun's process shim omits nextTick; mimic it with queueMicrotask for our tests.
+  proc.nextTick = ((callback: (...args: unknown[]) => void, ...args: unknown[]) => {
+    queueMicrotask(() => callback(...args));
+  }) as typeof proc.nextTick;
+};
+
+ensureProcessNextTick();
+
 type NextFunction = () => void | Promise<void>;
 
 type Middleware = (
@@ -57,13 +74,22 @@ const parseQuery = (url: URL): Record<string, QueryValue> => {
   return result;
 };
 
-const readBody = async (req: IncomingMessage): Promise<string> => {
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of req) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-  }
-  return Buffer.concat(chunks).toString('utf8');
-};
+const readBody = async (req: IncomingMessage): Promise<string> =>
+  await new Promise((resolve, reject) => {
+    const chunks: Uint8Array[] = [];
+
+    req.on('data', (chunk: string | Uint8Array) => {
+      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    });
+
+    req.on('end', () => {
+      resolve(Buffer.concat(chunks).toString('utf8'));
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+  });
 
 const runMiddleware = async (
   middleware: Middleware,

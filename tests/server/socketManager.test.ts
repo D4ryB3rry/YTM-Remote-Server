@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, afterEach, describe, expect, test, mock, jest } from 'bun:test';
+import { beforeAll, beforeEach, afterEach, afterAll, describe, expect, test, mock, jest } from 'bun:test';
 import type { PlayerState } from '../../src/shared/types/index.js';
 
 type Spy<Args extends unknown[] = unknown[], Return = unknown> = ((
@@ -110,15 +110,13 @@ mock.module(lyricsFetcherModulePath, () => ({
   LyricsFetcher: MockLyricsFetcher,
 }));
 
-const configModulePath = new URL('../../src/server/config.ts', import.meta.url).href;
+const actualConfigModule = await import('../../src/server/config.ts');
+const originalSocketUrl = actualConfigModule.config.ytmDesktop.socketUrl;
+actualConfigModule.config.ytmDesktop.socketUrl = 'http://mock-ytm';
+
+const configModulePath = new URL('../../src/server/config.js', import.meta.url).href;
 mock.module(configModulePath, () => ({
-  config: {
-    cors: {},
-    ytmDesktop: {
-      socketUrl: 'http://mock-ytm',
-      progressBroadcastIntervalMs: 100,
-    },
-  },
+  config: actualConfigModule.config,
 }));
 
 const socketIOModulePath = new URL('../../src/server/socket/socketIO.ts', import.meta.url).href;
@@ -151,6 +149,10 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.useRealTimers();
+});
+
+afterAll(() => {
+  actualConfigModule.config.ytmDesktop.socketUrl = originalSocketUrl;
 });
 
 const getLatestServer = (): MockSocketIOServer => {
