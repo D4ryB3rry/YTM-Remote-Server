@@ -45,6 +45,8 @@ class MockSocketIOServer {
   trigger(event: string, ...args: unknown[]): void {
     this.handlers.get(event)?.(...args);
   }
+
+  close(): void {}
 }
 
 class MockClientSocket {
@@ -119,20 +121,18 @@ mock.module(configModulePath, () => ({
   },
 }));
 
+const socketIOModulePath = new URL('../../src/server/socket/socketIO.ts', import.meta.url).href;
 const ioMock = createSpy<(url: string, options: unknown) => MockClientSocket>((url, options) =>
   new MockClientSocket(url, options)
 );
-mock.module('socket.io-client', () => ({
-  io: ioMock,
-  Socket: MockClientSocket,
-}));
-
-mock.module('socket.io', () => ({
-  Server: class extends MockSocketIOServer {
+mock.module(socketIOModulePath, () => ({
+  SocketIOServer: class extends MockSocketIOServer {
     constructor(httpServer: unknown, options: unknown) {
       super(httpServer, options);
     }
   },
+  SocketIOClient: ioMock,
+  ClientSocket: MockClientSocket,
 }));
 
 let SocketManager: any;
