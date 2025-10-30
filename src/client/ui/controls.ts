@@ -8,6 +8,7 @@ import type { ApiClient } from '../api/apiClient.js';
 import type { Thumbnail } from '@shared/types/index.js';
 import { debugLog } from '../utils/logger.js';
 import { getProxiedImageUrl } from '../utils/imageProxy.js';
+import { t } from '../i18n/index.js';
 
 export class ControlsUI {
   constructor(
@@ -82,7 +83,7 @@ export class ControlsUI {
    * Update track info display
    */
   updateTrackInfo(title: string, artist: string, album: string): void {
-    elements.trackTitle.textContent = title || 'Kein Song wird abgespielt';
+    elements.trackTitle.textContent = title || t('nowPlaying.noTrack');
     elements.trackArtist.textContent = artist || '-';
     elements.trackAlbum.textContent = album || '-';
   }
@@ -106,28 +107,28 @@ export class ControlsUI {
 
     if (isLive) {
       badgeClass = 'type-live';
-      badgeText = 'LIVE';
+      badgeText = t('mediaType.live');
       debugLog('[Badge] Setting LIVE badge');
     } else {
       switch (videoType) {
         case 3: // Podcast
           badgeClass = 'type-podcast';
-          badgeText = 'PODCAST';
+          badgeText = t('mediaType.podcast');
           debugLog('[Badge] Setting PODCAST badge');
           break;
         case 1: // Video
           badgeClass = 'type-video';
-          badgeText = 'VIDEO';
+          badgeText = t('mediaType.video');
           debugLog('[Badge] Setting VIDEO badge');
           break;
         case 0: // Audio
           badgeClass = 'type-audio';
-          badgeText = 'SONG';
+          badgeText = t('mediaType.song');
           debugLog('[Badge] Setting SONG badge');
           break;
         case 2: // Uploaded
           badgeClass = 'type-video';
-          badgeText = 'UPLOAD';
+          badgeText = t('mediaType.upload');
           debugLog('[Badge] Setting UPLOAD badge');
           break;
         default: // Unknown (-1) or undefined

@@ -8,6 +8,7 @@ import type { ApiClient } from '../api/apiClient.js';
 import { config } from '../config.js';
 import type { LyricsResponse, SyncedLyricLine } from '@shared/types/index.js';
 import { debugLog } from '../utils/logger.js';
+import { t } from '../i18n/index.js';
 
 export class LyricsUI {
   private currentTrackKey: string | null = null;
@@ -30,7 +31,7 @@ export class LyricsUI {
     elements.lyricsBtn.addEventListener('click', () => {
       const state = this.stateManager.getState();
       if (!state || !state.video) {
-        alert('Kein Song wird abgespielt');
+        alert(t('lyrics.alertNoSong'));
         return;
       }
 
@@ -77,7 +78,7 @@ export class LyricsUI {
         </svg>
         <h3 style="margin-bottom: 12px; font-size: 1.1em;">${message}</h3>
         <p style="font-size: 0.95em; opacity: 0.8; line-height: 1.5; margin-bottom: 20px;">
-          Lyrics sind direkt in YouTube Music verfügbar.
+          ${t('lyrics.unavailable')}
         </p>`;
 
     if (videoId) {
@@ -85,7 +86,7 @@ export class LyricsUI {
         <a href="https://music.youtube.com/watch?v=${videoId}"
            target="_blank"
            style="display: inline-block; padding: 10px 20px; background: rgba(255, 0, 0, 0.2); color: #ff5555; border: 1.5px solid rgba(255, 0, 0, 0.4); border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.2s;">
-          📱 In YouTube Music öffnen
+          ${t('lyrics.openInYouTubeMusic')}
         </a>`;
     }
 
@@ -98,7 +99,7 @@ export class LyricsUI {
    */
   private async load(artist: string, title: string): Promise<void> {
     if (!artist || !title) {
-      this.showError('Keine Track-Informationen verfügbar');
+      this.showError(t('lyrics.noTrackInfo'));
       return;
     }
 
@@ -120,7 +121,7 @@ export class LyricsUI {
     elements.lyricsContent.innerHTML = `
       <div class="lyrics-loading">
         <div class="spinner"></div>
-        <p>Lyrics werden geladen...</p>
+        <p>${t('lyrics.loading')}</p>
       </div>
     `;
 
@@ -135,7 +136,7 @@ export class LyricsUI {
 
     if (!result) {
       debugLog('[LyricsUI] No lyrics found');
-      this.showYouTubeMusicFallback('Keine Lyrics gefunden');
+      this.showYouTubeMusicFallback(t('lyrics.noLyricsFound'));
       return;
     }
 
@@ -144,7 +145,9 @@ export class LyricsUI {
     // Display synced lyrics if available
     if (result.hasSynced && result.synced && result.synced.length > 0) {
       this.syncedLyricsData = result.synced;
-      elements.lyricsStatus.textContent = `♪ Synced Lyrics · ${result.source}`;
+      elements.lyricsStatus.textContent = t('lyrics.syncedStatus', {
+        source: result.source,
+      });
       elements.lyricsStatus.classList.add('synced');
       elements.lyricsContent.classList.add('synced');
       this.displaySyncedLyrics(result.synced);
@@ -152,7 +155,9 @@ export class LyricsUI {
     } else {
       // Display plain lyrics
       this.syncedLyricsData = null;
-      elements.lyricsStatus.textContent = `Lyrics · ${result.source}`;
+      elements.lyricsStatus.textContent = t('lyrics.unsyncedStatus', {
+        source: result.source,
+      });
       elements.lyricsContent.classList.remove('synced');
       elements.lyricsContent.innerHTML = `
         <div class="lyrics-plain">
