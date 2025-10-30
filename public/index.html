@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +11,7 @@
         <!-- Status Bar -->
         <div class="status-bar">
             <div class="status-indicator" id="statusIndicator"></div>
-            <span id="statusText">Verbindung wird hergestellt...</span>
+            <span id="statusText" data-i18n="status.connecting">Connecting...</span>
         </div>
 
         <!-- Now Playing Card -->
@@ -27,7 +27,7 @@
             </div>
             <div class="track-info">
                 <div class="title-with-badge">
-                    <h2 id="trackTitle" class="track-title">Kein Song wird abgespielt</h2>
+                    <h2 id="trackTitle" class="track-title" data-i18n="nowPlaying.noTrack">No track is playing</h2>
                     <span id="mediaTypeBadge" class="media-type-badge" style="display: none;"></span>
                 </div>
                 <p id="trackArtist" class="track-artist">-</p>
@@ -49,7 +49,7 @@
 
         <!-- Main Controls -->
         <div class="controls">
-            <button class="control-btn secondary-btn" id="shuffleBtn" title="Shuffle">
+            <button class="control-btn secondary-btn" id="shuffleBtn" title="Shuffle" data-i18n-title="controls.shuffleTooltip">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="16 3 21 3 21 8"></polyline>
                     <line x1="4" y1="20" x2="21" y2="3"></line>
@@ -58,12 +58,12 @@
                     <line x1="4" y1="4" x2="9" y2="9"></line>
                 </svg>
             </button>
-            <button class="control-btn secondary-btn" id="prevBtn" title="Vorheriger Song">
+            <button class="control-btn secondary-btn" id="prevBtn" title="Previous track" data-i18n-title="controls.prevTooltip">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
                 </svg>
             </button>
-            <button class="control-btn primary-btn" id="playPauseBtn" title="Play/Pause">
+            <button class="control-btn primary-btn" id="playPauseBtn" title="Play/Pause" data-i18n-title="controls.playTooltip">
                 <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8 5v14l11-7z"/>
                 </svg>
@@ -71,12 +71,12 @@
                     <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
                 </svg>
             </button>
-            <button class="control-btn secondary-btn" id="nextBtn" title="Nächster Song">
+            <button class="control-btn secondary-btn" id="nextBtn" title="Next track" data-i18n-title="controls.nextTooltip">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M16 18h2V6h-2zm-11-1l8.5-6L5 5z"/>
                 </svg>
             </button>
-            <button class="control-btn secondary-btn" id="repeatBtn" title="Repeat">
+            <button class="control-btn secondary-btn" id="repeatBtn" title="Repeat mode" data-i18n-title="controls.repeatTooltip">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="17 1 21 5 17 9"></polyline>
                     <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
@@ -89,17 +89,17 @@
 
         <!-- Secondary Controls -->
         <div class="secondary-controls">
-            <button class="control-btn icon-btn" id="thumbsUpBtn" title="Like">
+            <button class="control-btn icon-btn" id="thumbsUpBtn" title="Like" data-i18n-title="controls.likeTooltip">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
                 </svg>
             </button>
-            <button class="control-btn icon-btn" id="thumbsDownBtn" title="Dislike">
+            <button class="control-btn icon-btn" id="thumbsDownBtn" title="Dislike" data-i18n-title="controls.dislikeTooltip">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
                 </svg>
             </button>
-            <button class="control-btn icon-btn" id="lyricsBtn" title="Lyrics anzeigen">
+            <button class="control-btn icon-btn" id="lyricsBtn" title="Show lyrics" data-i18n-title="controls.lyricsTooltip">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -113,7 +113,7 @@
         <!-- Lyrics Panel -->
         <div class="lyrics-panel" id="lyricsPanel">
             <div class="lyrics-header">
-                <h2 class="lyrics-title">Lyrics</h2>
+                <h2 class="lyrics-title" data-i18n="lyrics.panelTitle">Lyrics</h2>
                 <button class="lyrics-close" id="lyricsCloseBtn">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -125,14 +125,14 @@
             <div class="lyrics-content" id="lyricsContent">
                 <div class="lyrics-loading">
                     <div class="spinner"></div>
-                    <p>Lyrics werden geladen...</p>
+                    <p data-i18n="lyrics.loading">Loading lyrics...</p>
                 </div>
             </div>
         </div>
 
         <!-- Volume Control -->
         <div class="volume-control">
-            <button class="volume-btn" id="volumeBtn" title="Stumm schalten">
+            <button class="volume-btn" id="volumeBtn" title="Mute" data-i18n-title="controls.volumeTooltip">
                 <svg id="volumeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                     <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
@@ -150,10 +150,10 @@
 
         <!-- Direct Playback Section -->
         <div class="playback-section">
-            <h3 class="section-title">Direkt abspielen</h3>
+            <h3 class="section-title" data-i18n="controls.directPlayTitle">Play directly</h3>
             <div class="url-input-container">
-                <input type="text" id="urlInput" class="url-input" placeholder="YouTube Music URL oder Video-ID eingeben">
-                <button class="play-url-btn" id="playUrlBtn" title="Abspielen">
+                <input type="text" id="urlInput" class="url-input" placeholder="Enter a YouTube Music URL or video ID" data-i18n-placeholder="controls.playUrlPlaceholder">
+                <button class="play-url-btn" id="playUrlBtn" title="Play" data-i18n-title="controls.playUrlButtonTitle">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M8 5v14l11-7z"/>
                     </svg>
@@ -164,8 +164,8 @@
         <!-- Playlist Browser -->
         <div class="playlist-section">
             <div class="section-header">
-                <h3 class="section-title">Playlists</h3>
-                <button class="refresh-btn" id="refreshPlaylistsBtn" title="Aktualisieren">
+                <h3 class="section-title" data-i18n="playlists.sectionTitle">Playlists</h3>
+                <button class="refresh-btn" id="refreshPlaylistsBtn" title="Refresh" data-i18n-title="playlists.refreshTooltip">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="23 4 23 10 17 10"></polyline>
                         <polyline points="1 20 1 14 7 14"></polyline>
@@ -176,7 +176,7 @@
             <div class="playlist-list" id="playlistList">
                 <div class="playlist-loading">
                     <div class="spinner-small"></div>
-                    <p>Playlists werden geladen...</p>
+                    <p data-i18n="playlists.loading">Loading playlists...</p>
                 </div>
             </div>
         </div>
@@ -184,11 +184,11 @@
         <!-- Queue -->
         <div class="queue-section">
             <div class="section-header">
-                <h3 class="section-title">Warteschlange</h3>
+                <h3 class="section-title" data-i18n="queue.sectionTitle">Queue</h3>
                 <div class="queue-stats" id="queueStats"></div>
             </div>
             <div class="queue-list" id="queueList">
-                <p class="queue-empty">Keine Songs in der Warteschlange</p>
+                <p class="queue-empty" data-i18n="queue.empty">No tracks in the queue</p>
             </div>
         </div>
     </div>

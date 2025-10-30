@@ -5,6 +5,7 @@
 import { elements } from './elements.js';
 import type { ApiClient } from '../api/apiClient.js';
 import { getProxiedImageUrl } from '../utils/imageProxy.js';
+import { t } from '../i18n/index.js';
 
 interface Queue {
   items?: Array<{
@@ -26,12 +27,14 @@ export class QueueUI {
    */
   update(queue?: Queue): void {
     if (!queue || !queue.items || queue.items.length === 0) {
-      elements.queueList.innerHTML = '<p class="queue-empty">Keine Songs in der Warteschlange</p>';
+      elements.queueList.innerHTML = `<p class="queue-empty">${t('queue.empty')}</p>`;
       elements.queueStats.textContent = '';
       return;
     }
 
-    elements.queueStats.textContent = `${queue.items.length} Songs`;
+    elements.queueStats.textContent = t('queue.count', {
+      count: queue.items.length.toString(),
+    });
 
     elements.queueList.innerHTML = queue.items
       .map((item, index) => {
@@ -44,12 +47,12 @@ export class QueueUI {
           <div class="queue-item ${index === queue.selectedItemIndex ? 'active' : ''}" data-video-id="${item.videoId || ''}" data-index="${index}">
             ${
               proxiedThumbnail
-                ? `<img src="${proxiedThumbnail}" alt="Cover" class="queue-item-thumbnail">`
+                ? `<img src="${proxiedThumbnail}" alt="${t('queue.coverAlt')}" class="queue-item-thumbnail">`
                 : '<div class="queue-item-thumbnail-placeholder">🎵</div>'
             }
             <div class="queue-item-info">
-              <div class="queue-item-title">${item.title || 'Unbekannt'}</div>
-              <div class="queue-item-artist">${item.author || 'Unbekannt'}</div>
+              <div class="queue-item-title">${item.title || t('queue.unknownTrack')}</div>
+              <div class="queue-item-artist">${item.author || t('queue.unknownArtist')}</div>
             </div>
             <div class="queue-item-duration">${item.duration || ''}</div>
           </div>

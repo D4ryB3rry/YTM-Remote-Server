@@ -5,6 +5,7 @@
 import { elements } from './elements.js';
 import type { ApiClient } from '../api/apiClient.js';
 import { debugLog } from '../utils/logger.js';
+import { t } from '../i18n/index.js';
 
 export class PlaylistUI {
   private lastLoadTime = 0;
@@ -68,7 +69,7 @@ export class PlaylistUI {
       elements.playlistList.innerHTML = `
         <div class="playlist-loading">
           <div class="spinner-small"></div>
-          <p>Playlists werden geladen...</p>
+          <p>${t('playlists.loading')}</p>
         </div>
       `;
 
@@ -84,7 +85,7 @@ export class PlaylistUI {
           return;
         }
 
-        elements.playlistList.innerHTML = '<p class="queue-empty">Keine Playlists gefunden</p>';
+        elements.playlistList.innerHTML = `<p class="queue-empty">${t('playlists.noneFound')}</p>`;
         this.lastLoadTime = Date.now();
         debugLog('[PlaylistUI] No playlists found');
         return;
@@ -108,7 +109,7 @@ export class PlaylistUI {
         this.displayPlaylists(this.cachedPlaylists, true);
       } else {
         elements.playlistList.innerHTML =
-          '<p class="queue-empty">Fehler beim Laden der Playlists</p>';
+          `<p class="queue-empty">${t('playlists.loadError')}</p>`;
       }
       // Don't update lastLoadTime on error to allow retry
     } finally {
@@ -131,14 +132,16 @@ export class PlaylistUI {
     fromCache: boolean
   ): void {
     const cacheIndicator = fromCache
-      ? '<span style="opacity: 0.6; font-size: 11px; margin-left: 8px;">(Cached)</span>'
+      ? `<span style="opacity: 0.6; font-size: 11px; margin-left: 8px;">${t('playlists.cachedIndicator')}</span>`
       : '';
 
     elements.playlistList.innerHTML = playlists
       .map((playlist, index) => {
         // Show song count if available
         const songCount = playlist.videoCount || 0;
-        const songCountText = songCount ? `${songCount} Songs` : '';
+        const songCountText = songCount
+          ? t('playlists.songCount', { count: songCount.toString() })
+          : '';
 
         // Show author if available
         const author = playlist.author || '';
