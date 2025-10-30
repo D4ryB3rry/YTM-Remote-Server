@@ -181,7 +181,7 @@ export function setupRoutes(
     if (!artist || !title) {
       return res.status(400).json({
         error: 'Missing parameters',
-        message: 'Bitte Artist und Title angeben',
+        message: 'Please provide both artist and title',
       });
     }
 
@@ -193,7 +193,7 @@ export function setupRoutes(
       if (!result) {
         return res.status(404).json({
           error: 'Lyrics not found',
-          message: 'Keine Lyrics für diesen Song gefunden',
+          message: 'No lyrics found for this song',
         });
       }
 
@@ -203,7 +203,7 @@ export function setupRoutes(
       console.error('[Lyrics] Error:', error);
       res.status(500).json({
         error: 'Failed to fetch lyrics',
-        message: 'Fehler beim Laden der Lyrics',
+        message: 'Error loading lyrics',
       });
     }
   });
