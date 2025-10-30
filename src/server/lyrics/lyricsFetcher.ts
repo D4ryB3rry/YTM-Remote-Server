@@ -59,12 +59,10 @@ export class LyricsFetcher {
   /**
    * Prefetch lyrics without bubbling up errors
    */
-  async prefetch(artist: string, title: string): Promise<void> {
-    try {
-      await this.fetch(artist, title);
-    } catch (error) {
+  prefetch(artist: string, title: string): void {
+    this.fetch(artist, title).catch((error) => {
       console.error('[LyricsFetcher] Prefetch error:', error);
-    }
+    });
   }
 
   private async fetchAndCache(

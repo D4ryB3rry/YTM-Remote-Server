@@ -121,7 +121,15 @@ export class SocketManager {
     }
 
     this.lastPrefetchedTrackKey = trackKey;
-    void this.lyricsFetcher.prefetch(artist, title);
+    const expectedKey = trackKey;
+
+    setImmediate(() => {
+      if (this.lastPrefetchedTrackKey !== expectedKey) {
+        return;
+      }
+
+      this.lyricsFetcher.prefetch(artist, title);
+    });
   }
 
   private getTrackKey(artist: string, title: string): string {
