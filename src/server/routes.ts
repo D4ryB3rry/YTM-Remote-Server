@@ -3,6 +3,7 @@
  */
 
 import type { Express, Request, Response } from 'express';
+import { URL } from 'url';
 import type { YTMClient } from './api/ytmClient.js';
 import type { AuthManager } from './auth/authManager.js';
 import type { SocketManager } from './socket/socketManager.js';
@@ -30,6 +31,56 @@ export function setupRoutes(
       connected: authManager.isAuthenticated(),
       hasState: socketManager.getCurrentState() !== null,
     });
+  });
+
+  /**
+   * GET /api/proxy/image
+   * Proxy image requests through the backend to avoid mixed content/CORS issues
+   */
+  app.get('/api/proxy/image', async (req: Request, res: Response) => {
+    const rawUrl = req.query.url;
+    const targetUrl = Array.isArray(rawUrl) ? rawUrl[0] : rawUrl;
+
+    if (typeof targetUrl !== 'string' || targetUrl.trim().length === 0) {
+      return res.status(400).json({ error: 'Missing url parameter' });
+    }
+
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(targetUrl);
+    } catch {
+      return res.status(400).json({ error: 'Invalid url parameter' });
+    }
+
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return res.status(400).json({ error: 'Unsupported protocol' });
+    }
+
+    try {
+      const upstreamResponse = await fetch(parsedUrl);
+
+      if (!upstreamResponse.ok || !upstreamResponse.body) {
+        return res
+          .status(upstreamResponse.status || 502)
+          .json({ error: 'Failed to fetch image' });
+      }
+
+      const contentType = upstreamResponse.headers.get('content-type');
+      if (contentType) {
+        res.setHeader('Content-Type', contentType);
+      }
+
+      const cacheControl = upstreamResponse.headers.get('cache-control');
+      if (cacheControl) {
+        res.setHeader('Cache-Control', cacheControl);
+      }
+
+      const buffer = Buffer.from(await upstreamResponse.arrayBuffer());
+      res.send(buffer);
+    } catch (error) {
+      console.error('[Proxy] Error fetching image:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
 
   /**

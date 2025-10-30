@@ -20,6 +20,10 @@ export const config = {
       return `http://${this.host}:${this.port}`;
     },
     socketUrl: 'http://127.0.0.1:9863/api/v1/realtime',
+    progressBroadcastIntervalMs: parseInt(
+      process.env.YTM_PROGRESS_BROADCAST_INTERVAL_MS ?? '100',
+      10
+    ),
   },
 
   // App configuration

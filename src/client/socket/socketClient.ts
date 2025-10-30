@@ -3,6 +3,7 @@
  */
 
 import { io, Socket } from 'socket.io-client';
+import { debugLog } from '../utils/logger.js';
 import type { PlayerState } from '@shared/types/index.js';
 
 export class SocketClient {
@@ -21,17 +22,17 @@ export class SocketClient {
    */
   private setupListeners(): void {
     this.socket.on('connect', () => {
-      console.log('Connected to server');
+      debugLog('Connected to server');
       this.onConnectCallback?.();
     });
 
     this.socket.on('disconnect', () => {
-      console.log('Disconnected from server');
+      debugLog('Disconnected from server');
       this.onDisconnectCallback?.();
     });
 
     this.socket.on('state-update', (state: PlayerState) => {
-      console.log('State update received:', state);
+      debugLog('State update received:', state);
       this.onStateUpdateCallback?.(state);
     });
   }

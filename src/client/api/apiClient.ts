@@ -3,6 +3,7 @@
  */
 
 import { config } from '../config.js';
+import { debugLog } from '../utils/logger.js';
 import type {
   StatusResponse,
   PlayerState,
@@ -63,10 +64,10 @@ export class ApiClient {
    * Get playlists
    */
   async getPlaylists(): Promise<Playlist[] | null> {
-    console.log('[ApiClient] Fetching playlists from', config.api.endpoints.playlists);
+    debugLog('[ApiClient] Fetching playlists from', config.api.endpoints.playlists);
     try {
       const response = await fetch(config.api.endpoints.playlists);
-      console.log('[ApiClient] Response status:', response.status, response.statusText);
+      debugLog('[ApiClient] Response status:', response.status, response.statusText);
 
       if (!response.ok) {
         // Handle rate limiting specifically
@@ -86,7 +87,7 @@ export class ApiClient {
       }
 
       const data = (await response.json()) as Playlist[];
-      console.log('[ApiClient] Received', data.length, 'playlists');
+      debugLog('[ApiClient] Received', data.length, 'playlists');
       return data;
     } catch (error) {
       console.error('[ApiClient] Error loading playlists:', error);
@@ -120,13 +121,13 @@ export class ApiClient {
   async getLyrics(artist: string, title: string): Promise<LyricsResponse | null> {
     try {
       const url = `${config.api.baseUrl}/api/lyrics?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`;
-      console.log('[ApiClient] Fetching lyrics from:', url);
+      debugLog('[ApiClient] Fetching lyrics from:', url);
 
       const response = await fetch(url);
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('[ApiClient] Lyrics not found (404)');
+          debugLog('[ApiClient] Lyrics not found (404)');
           return null;
         }
         const errorData = (await response.json()) as LyricsErrorResponse;
@@ -135,7 +136,7 @@ export class ApiClient {
       }
 
       const data = (await response.json()) as LyricsResponse;
-      console.log('[ApiClient] Lyrics received:', {
+      debugLog('[ApiClient] Lyrics received:', {
         hasSynced: data.hasSynced,
         source: data.source,
         linesCount: data.synced?.length || 0,
