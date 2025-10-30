@@ -94,7 +94,6 @@ socketClient.onDisconnect(() => {
 
 socketClient.onStateUpdate((state) => {
   stateManager.setState(state);
-  lyricsUI.handleStateUpdate(state);
   updateUI(state);
 });
 

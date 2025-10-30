@@ -10,6 +10,7 @@ import { AuthManager } from './auth/authManager.js';
 import { YTMClient } from './api/ytmClient.js';
 import { SocketManager } from './socket/socketManager.js';
 import { setupRoutes } from './routes.js';
+import { LyricsFetcher } from './lyrics/lyricsFetcher.js';
 
 // Initialize Express app
 const app = express();
@@ -23,7 +24,8 @@ app.use(express.static(config.paths.publicDir));
 // Initialize components
 const authManager = new AuthManager();
 const ytmClient = new YTMClient(authManager);
-const socketManager = new SocketManager(httpServer, authManager);
+const lyricsFetcher = new LyricsFetcher();
+const socketManager = new SocketManager(httpServer, authManager, lyricsFetcher);
 
 /**
  * Initialize authentication on startup
@@ -60,7 +62,7 @@ async function initializeAuth(): Promise<void> {
 }
 
 // Setup API routes
-setupRoutes(app, ytmClient, authManager, socketManager, initializeAuth);
+setupRoutes(app, ytmClient, authManager, socketManager, initializeAuth, lyricsFetcher);
 
 // Start server
 httpServer.listen(config.port, async () => {

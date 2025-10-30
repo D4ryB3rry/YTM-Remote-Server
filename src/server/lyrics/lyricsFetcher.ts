@@ -2,7 +2,7 @@
  * Fetch lyrics from various sources
  */
 
-import { LyricsCache, type CachedLyrics } from './lyricsCache.js';
+import { LyricsCache } from './lyricsCache.js';
 
 export interface LyricsResult {
   lyrics: string;
@@ -13,15 +13,22 @@ export interface LyricsResult {
 
 export class LyricsFetcher {
   private cache: LyricsCache;
+  private pendingFetches = new Map<string, Promise<LyricsResult | null>>();
+  private notFoundTimestamps = new Map<string, number>();
+  private readonly notFoundTtlMs: number;
 
   constructor() {
     this.cache = new LyricsCache();
+    // Avoid hammering providers for tracks without lyrics (default: 1 hour)
+    this.notFoundTtlMs = 60 * 60 * 1000;
   }
 
   /**
    * Fetch lyrics for a song
    */
   async fetch(artist: string, title: string): Promise<LyricsResult | null> {
+    const key = this.getTrackKey(artist, title);
+
     // Check cache first
     const cached = this.cache.get(artist, title);
     if (cached) {
@@ -33,23 +40,59 @@ export class LyricsFetcher {
       };
     }
 
-    // Try lrclib.net (free, no API key needed)
-    console.log(`[LyricsFetcher] Fetching lyrics from lrclib.net: ${artist} - ${title}`);
-    const result = await this.fetchFromLRCLib(artist, title);
-
-    if (result) {
-      // Cache the result
-      this.cache.set(artist, title, {
-        lyrics: result.lyrics,
-        synced: result.synced,
-        hasSynced: result.hasSynced,
-        source: result.source,
-        cachedAt: Date.now(),
-      });
-      return result;
+    // Skip if we recently saw a negative result
+    const lastNotFound = this.notFoundTimestamps.get(key);
+    if (lastNotFound && Date.now() - lastNotFound < this.notFoundTtlMs) {
+      return null;
     }
 
-    return null;
+    const pending = this.pendingFetches.get(key);
+    if (pending) {
+      return pending;
+    }
+
+    const fetchPromise = this.fetchAndCache(artist, title, key);
+    this.pendingFetches.set(key, fetchPromise);
+    return fetchPromise;
+  }
+
+  /**
+   * Prefetch lyrics without bubbling up errors
+   */
+  async prefetch(artist: string, title: string): Promise<void> {
+    try {
+      await this.fetch(artist, title);
+    } catch (error) {
+      console.error('[LyricsFetcher] Prefetch error:', error);
+    }
+  }
+
+  private async fetchAndCache(
+    artist: string,
+    title: string,
+    key: string
+  ): Promise<LyricsResult | null> {
+    try {
+      console.log(`[LyricsFetcher] Fetching lyrics from lrclib.net: ${artist} - ${title}`);
+      const result = await this.fetchFromLRCLib(artist, title);
+
+      if (result) {
+        this.cache.set(artist, title, {
+          lyrics: result.lyrics,
+          synced: result.synced,
+          hasSynced: result.hasSynced,
+          source: result.source,
+          cachedAt: Date.now(),
+        });
+        this.notFoundTimestamps.delete(key);
+      } else {
+        this.notFoundTimestamps.set(key, Date.now());
+      }
+
+      return result;
+    } finally {
+      this.pendingFetches.delete(key);
+    }
   }
 
   /**
@@ -117,5 +160,9 @@ export class LyricsFetcher {
     }
 
     return parsed;
+  }
+
+  private getTrackKey(artist: string, title: string): string {
+    return `${artist.trim().toLowerCase()}::${title.trim().toLowerCase()}`;
   }
 }
