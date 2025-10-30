@@ -1,0 +1,7 @@
+# Diese Datei dient nur als Beispiel
+# Die echte authToken.txt wird automatisch vom Server erstellt
+# 
+# Format: Ein Token pro Zeile, z.B.:
+# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U
+#
+# WICHTIG: Teile dein Token niemals öffentlich!

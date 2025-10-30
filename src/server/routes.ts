@@ -1,0 +1,145 @@
+/**
+ * Express API routes
+ */
+
+import type { Express, Request, Response } from 'express';
+import type { YTMClient } from './api/ytmClient.js';
+import type { AuthManager } from './auth/authManager.js';
+import type { SocketManager } from './socket/socketManager.js';
+import type { CommandRequest } from '@shared/types/index.js';
+import { LyricsFetcher } from './lyrics/lyricsFetcher.js';
+import { PlaylistCache } from './cache/playlistCache.js';
+
+// Initialize singletons
+const lyricsFetcher = new LyricsFetcher();
+const playlistCache = PlaylistCache.getInstance();
+
+export function setupRoutes(
+  app: Express,
+  ytmClient: YTMClient,
+  authManager: AuthManager,
+  socketManager: SocketManager,
+  initializeAuth: () => Promise<void>
+): void {
+  /**
+   * GET /api/status
+   * Check server connection status
+   */
+  app.get('/api/status', (req: Request, res: Response) => {
+    res.json({
+      connected: authManager.isAuthenticated(),
+      hasState: socketManager.getCurrentState() !== null,
+    });
+  });
+
+  /**
+   * GET /api/state
+   * Get current player state
+   */
+  app.get('/api/state', async (req: Request, res: Response) => {
+    if (!authManager.isAuthenticated()) {
+      return res.status(401).json({ error: 'Not authenticated with YTMDesktop' });
+    }
+
+    const state = await ytmClient.getPlayerState();
+    res.json(state || {});
+  });
+
+  /**
+   * GET /api/playlists
+   * Get user playlists (with caching for rate limit handling)
+   */
+  app.get('/api/playlists', async (req: Request, res: Response) => {
+    console.log('[Route] GET /api/playlists requested');
+
+    if (!authManager.isAuthenticated()) {
+      console.log('[Route] Not authenticated, returning 401');
+      return res.status(401).json({ error: 'Not authenticated with YTMDesktop' });
+    }
+
+    console.log('[Route] Calling ytmClient.getPlaylists()...');
+    const playlists = await ytmClient.getPlaylists();
+
+    if (playlists === null) {
+      console.log('[Route] API returned null, checking cache...');
+
+      // Try to use cached playlists
+      const cachedPlaylists = playlistCache.get();
+      if (cachedPlaylists) {
+        console.log(
+          `[Route] Returning ${cachedPlaylists.length} cached playlists (fallback)`
+        );
+        return res.json(cachedPlaylists);
+      }
+
+      console.log('[Route] No cache available, returning 500');
+      return res.status(500).json({ error: 'Failed to get playlists' });
+    }
+
+    // Cache successful result
+    playlistCache.set(playlists);
+
+    console.log('[Route] Returning', playlists.length, 'playlists (fresh)');
+    res.json(playlists);
+  });
+
+  /**
+   * POST /api/command
+   * Send command to YTMDesktop
+   */
+  app.post('/api/command', async (req: Request, res: Response) => {
+    const { command, data } = req.body as CommandRequest;
+    const success = await ytmClient.sendCommand(command, data);
+    res.json({ success });
+  });
+
+  /**
+   * POST /api/reauth
+   * Force re-authentication
+   */
+  app.post('/api/reauth', async (req: Request, res: Response) => {
+    console.log('Re-authentication requested...');
+    authManager.clearToken();
+    await authManager.deleteToken();
+    socketManager.disconnectFromYTMDesktop();
+    await initializeAuth();
+    res.json({ success: authManager.isAuthenticated() });
+  });
+
+  /**
+   * GET /api/lyrics
+   * Get lyrics for a song (with file cache)
+   */
+  app.get('/api/lyrics', async (req: Request, res: Response) => {
+    const { artist, title } = req.query;
+
+    if (!artist || !title) {
+      return res.status(400).json({
+        error: 'Missing parameters',
+        message: 'Bitte Artist und Title angeben',
+      });
+    }
+
+    console.log(`[Lyrics] Fetching lyrics for: ${artist} - ${title}`);
+
+    try {
+      const result = await lyricsFetcher.fetch(artist as string, title as string);
+
+      if (!result) {
+        return res.status(404).json({
+          error: 'Lyrics not found',
+          message: 'Keine Lyrics für diesen Song gefunden',
+        });
+      }
+
+      console.log(`[Lyrics] Successfully fetched from ${result.source}`);
+      res.json(result);
+    } catch (error) {
+      console.error('[Lyrics] Error:', error);
+      res.status(500).json({
+        error: 'Failed to fetch lyrics',
+        message: 'Fehler beim Laden der Lyrics',
+      });
+    }
+  });
+}
