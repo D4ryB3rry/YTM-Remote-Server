@@ -333,16 +333,23 @@ describe('server routes', () => {
   });
 
   it('returns 500 when lyrics fetch fails', async () => {
-    const ctx = createTestApp({
-      lyricsFetcher: {
-        fetch: mock(async () => {
-          throw new Error('boom');
-        }),
-      },
-    });
+    const originalConsoleError = console.error;
+    console.error = mock(() => {}) as unknown as typeof console.error;
 
-    const res = await request(ctx.app).get('/api/lyrics?artist=A&title=B');
-    expect(res.status).toBe(500);
+    try {
+      const ctx = createTestApp({
+        lyricsFetcher: {
+          fetch: mock(async () => {
+            throw new Error('boom');
+          }),
+        },
+      });
+
+      const res = await request(ctx.app).get('/api/lyrics?artist=A&title=B');
+      expect(res.status).toBe(500);
+    } finally {
+      console.error = originalConsoleError;
+    }
   });
 
   it('returns lyrics payload on success', async () => {
