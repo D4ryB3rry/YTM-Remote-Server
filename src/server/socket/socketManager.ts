@@ -13,6 +13,9 @@ export class SocketManager {
   private io: SocketIOServer;
   private ytmSocket: ClientSocket | null = null;
   private currentState: PlayerState | null = null;
+  private lastBroadcastState: PlayerState | null = null;
+  private lastBroadcastAt = 0;
+  private readonly progressBroadcastIntervalMs: number;
 
   constructor(
     httpServer: HTTPServer,
@@ -22,6 +25,9 @@ export class SocketManager {
     this.io = new SocketIOServer(httpServer, {
       cors: config.cors,
     });
+
+    this.progressBroadcastIntervalMs =
+      config.ytmDesktop.progressBroadcastIntervalMs ?? 100;
 
     this.setupWebClientHandlers();
   }
@@ -72,8 +78,15 @@ export class SocketManager {
 
     this.ytmSocket.on('state-update', (state: PlayerState) => {
       this.currentState = state;
-      // Broadcast to all connected web clients
-      this.io.emit('state-update', state);
+      const now = Date.now();
+      if (this.shouldBroadcastImmediately(state)) {
+        this.emitStateUpdate(state, now);
+        return;
+      }
+
+      if (now - this.lastBroadcastAt >= this.progressBroadcastIntervalMs) {
+        this.emitStateUpdate(state, now);
+      }
     });
 
     this.ytmSocket.on('disconnect', () => {
@@ -119,5 +132,98 @@ export class SocketManager {
    */
   getIO(): SocketIOServer {
     return this.io;
+  }
+
+  private shouldBroadcastImmediately(state: PlayerState): boolean {
+    const previous = this.lastBroadcastState;
+    if (!previous) {
+      return true;
+    }
+
+    if (previous.player.trackState !== state.player.trackState) {
+      return true;
+    }
+
+    if (previous.video.id !== state.video.id) {
+      return true;
+    }
+
+    if (this.hasQueueMetadataChanged(previous, state)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private hasQueueMetadataChanged(
+    previous: PlayerState,
+    current: PlayerState
+  ): boolean {
+    const prevQueue = previous.player.queue;
+    const currQueue = current.player.queue;
+
+    if (!prevQueue && !currQueue) {
+      return false;
+    }
+
+    if (!prevQueue || !currQueue) {
+      return true;
+    }
+
+    const prevLength = prevQueue.items?.length ?? 0;
+    const currLength = currQueue.items?.length ?? 0;
+
+    if (prevLength !== currLength) {
+      return true;
+    }
+
+    const prevSelectedIndex = prevQueue.selectedItemIndex ?? -1;
+    const currSelectedIndex = currQueue.selectedItemIndex ?? -1;
+
+    if (prevSelectedIndex !== currSelectedIndex) {
+      return true;
+    }
+
+    const prevSelectedId =
+      prevSelectedIndex >= 0
+        ? prevQueue.items?.[prevSelectedIndex]?.videoId ?? null
+        : null;
+    const currSelectedId =
+      currSelectedIndex >= 0
+        ? currQueue.items?.[currSelectedIndex]?.videoId ?? null
+        : null;
+
+    if (prevSelectedId !== currSelectedId) {
+      return true;
+    }
+
+    const prevRepeatMode = prevQueue.repeatMode ?? -1;
+    const currRepeatMode = currQueue.repeatMode ?? -1;
+
+    if (prevRepeatMode !== currRepeatMode) {
+      return true;
+    }
+
+    const prevAutoplay = previous.player.queueAutoplay ?? false;
+    const currAutoplay = current.player.queueAutoplay ?? false;
+
+    if (prevAutoplay !== currAutoplay) {
+      return true;
+    }
+
+    const prevAutoplayMode = previous.player.queueAutoplayMode ?? '';
+    const currAutoplayMode = current.player.queueAutoplayMode ?? '';
+
+    if (prevAutoplayMode !== currAutoplayMode) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private emitStateUpdate(state: PlayerState, timestamp: number): void {
+    this.lastBroadcastState = state;
+    this.lastBroadcastAt = timestamp;
+    this.io.emit('state-update', state);
   }
 }
