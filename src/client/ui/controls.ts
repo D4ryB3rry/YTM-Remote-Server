@@ -7,6 +7,7 @@ import type { StateManager } from '../state/stateManager.js';
 import type { ApiClient } from '../api/apiClient.js';
 import type { Thumbnail } from '@shared/types/index.js';
 import { debugLog } from '../utils/logger.js';
+import { getProxiedImageUrl } from '../utils/imageProxy.js';
 
 export class ControlsUI {
   constructor(
@@ -176,9 +177,11 @@ export class ControlsUI {
     elements.albumArt.style.display = 'none';
 
     // Load new image
+    const proxiedUrl = getProxiedImageUrl(newUrl);
+
     const img = new Image();
     img.onload = () => {
-      elements.albumArt.src = newUrl;
+      elements.albumArt.src = proxiedUrl;
       elements.albumArt.style.display = 'block';
       elements.albumArtPlaceholder.style.opacity = '0';
     };
@@ -189,7 +192,7 @@ export class ControlsUI {
       elements.albumArtPlaceholder.style.opacity = '1';
       this.stateManager.setLastAlbumArtUrl('');
     };
-    img.src = newUrl;
+    img.src = proxiedUrl;
   }
 
   /**

@@ -4,6 +4,7 @@
 
 import { elements } from './elements.js';
 import type { ApiClient } from '../api/apiClient.js';
+import { getProxiedImageUrl } from '../utils/imageProxy.js';
 
 interface Queue {
   items?: Array<{
@@ -37,12 +38,13 @@ export class QueueUI {
         // Get thumbnail URL (use smallest one for queue)
         const thumbnail =
           item.thumbnails && item.thumbnails.length > 0 ? item.thumbnails[0].url : '';
+        const proxiedThumbnail = thumbnail ? getProxiedImageUrl(thumbnail) : '';
 
         return `
           <div class="queue-item ${index === queue.selectedItemIndex ? 'active' : ''}" data-video-id="${item.videoId || ''}" data-index="${index}">
             ${
-              thumbnail
-                ? `<img src="${thumbnail}" alt="Cover" class="queue-item-thumbnail">`
+              proxiedThumbnail
+                ? `<img src="${proxiedThumbnail}" alt="Cover" class="queue-item-thumbnail">`
                 : '<div class="queue-item-thumbnail-placeholder">🎵</div>'
             }
             <div class="queue-item-info">
