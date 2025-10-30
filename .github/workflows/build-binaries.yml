@@ -2,7 +2,7 @@ name: Build Bun Executables
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
     tags:
       - "v*"
   pull_request:
