@@ -13,12 +13,18 @@
         "@types/cors": "^2.8.17",
         "@types/express": "^4.17.21",
         "bun-types": "^1.1.38",
+        "happy-dom": "file:tests/vendor/happy-dom",
+        "@testing-library/dom": "file:tests/vendor/testing-library-dom",
         "typescript": "^5.7.2",
       },
     },
   },
   "packages": {
     "@socket.io/component-emitter": ["@socket.io/component-emitter@3.1.2", "", {}, "sha512-9BCxFwvbGg/RsZK9tjXd8s4UcwR0MWeFQ1XEKIQVVvAGJyINdrqKMcTRyLoK8Rse1GjzLV9cwjWV1olXRWEXVA=="],
+
+    "@testing-library/dom": ["@testing-library/dom@file:tests/vendor/testing-library-dom", "", {}, ""],
+
+    "happy-dom": ["happy-dom@file:tests/vendor/happy-dom", "", {}, ""],
 
     "@types/body-parser": ["@types/body-parser@1.19.6", "", { "dependencies": { "@types/connect": "*", "@types/node": "*" } }, "sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g=="],
 

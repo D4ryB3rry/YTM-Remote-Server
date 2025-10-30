@@ -17,9 +17,12 @@
     "paths": {
       "@server/*": ["./src/server/*"],
       "@client/*": ["./src/client/*"],
-      "@shared/*": ["./src/shared/*"]
+      "@shared/*": ["./src/shared/*"],
+      "happy-dom": ["./tests/vendor/happy-dom/index.ts"],
+      "@testing-library/dom": ["./tests/vendor/testing-library-dom/index.ts"],
+      "socket.io-client": ["./tests/vendor/socket.io-client/index.ts"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist", "public"]
 }

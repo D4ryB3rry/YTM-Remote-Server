@@ -6,6 +6,16 @@ import { io, Socket } from 'socket.io-client';
 import { debugLog } from '../utils/logger.js';
 import type { PlayerState } from '@shared/types/index.js';
 
+type SocketFactory = () => Socket;
+
+const createSocket = (): Socket => {
+  const globalFactory = (globalThis as { __YTM_SOCKET_FACTORY__?: SocketFactory }).__YTM_SOCKET_FACTORY__;
+  if (globalFactory) {
+    return globalFactory();
+  }
+  return io();
+};
+
 export class SocketClient {
   private socket: Socket;
   private onConnectCallback?: () => void;
@@ -13,7 +23,7 @@ export class SocketClient {
   private onStateUpdateCallback?: (state: PlayerState) => void;
 
   constructor() {
-    this.socket = io();
+    this.socket = createSocket();
     this.setupListeners();
   }
 
