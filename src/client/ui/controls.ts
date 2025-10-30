@@ -6,6 +6,7 @@ import { elements } from './elements.js';
 import type { StateManager } from '../state/stateManager.js';
 import type { ApiClient } from '../api/apiClient.js';
 import type { Thumbnail } from '@shared/types/index.js';
+import { debugLog } from '../utils/logger.js';
 
 export class ControlsUI {
   constructor(
@@ -50,7 +51,7 @@ export class ControlsUI {
       // Cycle: 0 (None) -> 1 (All) -> 2 (One) -> 0
       const nextMode = (mode + 1) % 3;
 
-      console.log('Repeat mode change:', mode, '->', nextMode);
+      debugLog('Repeat mode change:', mode, '->', nextMode);
       this.apiClient.sendCommand('repeatMode', nextMode);
     });
 
@@ -90,7 +91,7 @@ export class ControlsUI {
    */
   updateMediaTypeBadge(isLive: boolean, videoType?: number): void {
     // Debug logging
-    console.log('[Badge] isLive:', isLive, 'videoType:', videoType);
+    debugLog('[Badge] isLive:', isLive, 'videoType:', videoType);
 
     // Hide badge if no type information
     if (videoType === undefined && !isLive) {
@@ -105,31 +106,31 @@ export class ControlsUI {
     if (isLive) {
       badgeClass = 'type-live';
       badgeText = 'LIVE';
-      console.log('[Badge] Setting LIVE badge');
+      debugLog('[Badge] Setting LIVE badge');
     } else {
       switch (videoType) {
         case 3: // Podcast
           badgeClass = 'type-podcast';
           badgeText = 'PODCAST';
-          console.log('[Badge] Setting PODCAST badge');
+          debugLog('[Badge] Setting PODCAST badge');
           break;
         case 1: // Video
           badgeClass = 'type-video';
           badgeText = 'VIDEO';
-          console.log('[Badge] Setting VIDEO badge');
+          debugLog('[Badge] Setting VIDEO badge');
           break;
         case 0: // Audio
           badgeClass = 'type-audio';
           badgeText = 'SONG';
-          console.log('[Badge] Setting SONG badge');
+          debugLog('[Badge] Setting SONG badge');
           break;
         case 2: // Uploaded
           badgeClass = 'type-video';
           badgeText = 'UPLOAD';
-          console.log('[Badge] Setting UPLOAD badge');
+          debugLog('[Badge] Setting UPLOAD badge');
           break;
         default: // Unknown (-1) or undefined
-          console.log('[Badge] Unknown type, hiding badge');
+          debugLog('[Badge] Unknown type, hiding badge');
           elements.mediaTypeBadge.style.display = 'none';
           return;
       }
@@ -139,7 +140,7 @@ export class ControlsUI {
     elements.mediaTypeBadge.className = `media-type-badge ${badgeClass}`;
     elements.mediaTypeBadge.textContent = badgeText;
     elements.mediaTypeBadge.style.display = 'inline-flex';
-    console.log('[Badge] Badge updated:', badgeClass, badgeText);
+    debugLog('[Badge] Badge updated:', badgeClass, badgeText);
   }
 
   /**
@@ -238,19 +239,19 @@ export class ControlsUI {
    * Update like buttons
    */
   updateLikeButtons(likeStatus?: 'LIKE' | 'DISLIKE' | 'INDIFFERENT'): void {
-    console.log('[ControlsUI] updateLikeButtons called with:', likeStatus);
+    debugLog('[ControlsUI] updateLikeButtons called with:', likeStatus);
 
     elements.thumbsUpBtn.classList.remove('active');
     elements.thumbsDownBtn.classList.remove('active');
 
     if (likeStatus === 'LIKE') {
       elements.thumbsUpBtn.classList.add('active');
-      console.log('[ControlsUI] Set thumbs up as active');
+      debugLog('[ControlsUI] Set thumbs up as active');
     } else if (likeStatus === 'DISLIKE') {
       elements.thumbsDownBtn.classList.add('active');
-      console.log('[ControlsUI] Set thumbs down as active');
+      debugLog('[ControlsUI] Set thumbs down as active');
     } else {
-      console.log('[ControlsUI] No like/dislike status or INDIFFERENT');
+      debugLog('[ControlsUI] No like/dislike status or INDIFFERENT');
     }
   }
 

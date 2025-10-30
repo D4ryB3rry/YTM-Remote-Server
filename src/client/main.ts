@@ -12,6 +12,7 @@ import { VolumeUI } from './ui/volume.js';
 import { QueueUI } from './ui/queue.js';
 import { PlaylistUI } from './ui/playlist.js';
 import { LyricsUI } from './ui/lyrics.js';
+import { debugLog } from './utils/logger.js';
 
 // Initialize state and API
 const stateManager = new StateManager();
@@ -59,7 +60,7 @@ function updateUI(state: ReturnType<StateManager['getState']>): void {
   controlsUI.updateRepeatButton(player.queue?.repeatMode);
 
   // Update like buttons
-  console.log('[Main] video.likeStatus:', video?.likeStatus);
+  debugLog('[Main] video.likeStatus:', video?.likeStatus);
   controlsUI.updateLikeButtons(video?.likeStatus);
 
   // Update volume
@@ -99,4 +100,4 @@ socketClient.onStateUpdate((state) => {
 // Initialize status display
 statusUI.update(stateManager.isClientConnected());
 
-console.log('YTM Remote Client initialized');
+debugLog('YTM Remote Client initialized');

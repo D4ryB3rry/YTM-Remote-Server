@@ -4,6 +4,7 @@
 
 import { elements } from './elements.js';
 import type { ApiClient } from '../api/apiClient.js';
+import { debugLog } from '../utils/logger.js';
 
 export class PlaylistUI {
   private lastLoadTime = 0;
@@ -42,11 +43,11 @@ export class PlaylistUI {
    * @param force - Force reload even if within cooldown period
    */
   async load(force = false): Promise<void> {
-    console.log('[PlaylistUI] load() called, force:', force);
+    debugLog('[PlaylistUI] load() called, force:', force);
 
     // Check if already loading
     if (this.isLoading) {
-      console.log('[PlaylistUI] Already loading, skipping...');
+      debugLog('[PlaylistUI] Already loading, skipping...');
       return;
     }
 
@@ -54,13 +55,15 @@ export class PlaylistUI {
     if (!force && this.lastLoadTime > 0) {
       const timeSinceLastLoad = Date.now() - this.lastLoadTime;
       if (timeSinceLastLoad < this.LOAD_COOLDOWN) {
-        console.log(`[PlaylistUI] Cooldown active (${Math.ceil((this.LOAD_COOLDOWN - timeSinceLastLoad) / 1000)}s remaining)`);
+        debugLog(
+          `[PlaylistUI] Cooldown active (${Math.ceil((this.LOAD_COOLDOWN - timeSinceLastLoad) / 1000)}s remaining)`
+        );
         return;
       }
     }
 
     this.isLoading = true;
-    console.log('[PlaylistUI] Starting playlist load...');
+    debugLog('[PlaylistUI] Starting playlist load...');
     try {
       elements.playlistList.innerHTML = `
         <div class="playlist-loading">
@@ -71,37 +74,37 @@ export class PlaylistUI {
 
       const playlists = await this.apiClient.getPlaylists();
 
-      console.log('[PlaylistUI] Received playlists:', playlists ? playlists.length : 'null');
+      debugLog('[PlaylistUI] Received playlists:', playlists ? playlists.length : 'null');
 
       if (!playlists || playlists.length === 0) {
         // Try to use cached playlists if available
         if (this.cachedPlaylists && this.cachedPlaylists.length > 0) {
-          console.log('[PlaylistUI] Using cached playlists as fallback');
+          debugLog('[PlaylistUI] Using cached playlists as fallback');
           this.displayPlaylists(this.cachedPlaylists, true);
           return;
         }
 
         elements.playlistList.innerHTML = '<p class="queue-empty">Keine Playlists gefunden</p>';
         this.lastLoadTime = Date.now();
-        console.log('[PlaylistUI] No playlists found');
+        debugLog('[PlaylistUI] No playlists found');
         return;
       }
 
       // Cache successful result
       this.cachedPlaylists = playlists;
-      console.log('[PlaylistUI] Playlists cached for fallback');
+      debugLog('[PlaylistUI] Playlists cached for fallback');
 
       this.displayPlaylists(playlists, false);
 
       // Update last load time on success
       this.lastLoadTime = Date.now();
-      console.log('[PlaylistUI] Playlists loaded successfully, count:', playlists.length);
+      debugLog('[PlaylistUI] Playlists loaded successfully, count:', playlists.length);
     } catch (error) {
       console.error('[PlaylistUI] Error loading playlists:', error);
 
       // Try to use cached playlists as fallback
       if (this.cachedPlaylists && this.cachedPlaylists.length > 0) {
-        console.log('[PlaylistUI] Using cached playlists as fallback after error');
+        debugLog('[PlaylistUI] Using cached playlists as fallback after error');
         this.displayPlaylists(this.cachedPlaylists, true);
       } else {
         elements.playlistList.innerHTML =
@@ -110,7 +113,7 @@ export class PlaylistUI {
       // Don't update lastLoadTime on error to allow retry
     } finally {
       this.isLoading = false;
-      console.log('[PlaylistUI] Loading finished');
+      debugLog('[PlaylistUI] Loading finished');
     }
   }
 

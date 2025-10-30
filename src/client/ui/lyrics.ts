@@ -7,6 +7,7 @@ import type { StateManager } from '../state/stateManager.js';
 import type { ApiClient } from '../api/apiClient.js';
 import { config } from '../config.js';
 import type { SyncedLyricLine } from '@shared/types/index.js';
+import { debugLog } from '../utils/logger.js';
 
 export class LyricsUI {
   private currentTrackKey: string | null = null;
@@ -124,16 +125,16 @@ export class LyricsUI {
     `;
 
     // Fetch lyrics from API
-    console.log('[LyricsUI] Loading lyrics for:', artist, '-', title);
+    debugLog('[LyricsUI] Loading lyrics for:', artist, '-', title);
     const result = await this.apiClient.getLyrics(artist, title);
 
     if (!result) {
-      console.log('[LyricsUI] No lyrics found');
+      debugLog('[LyricsUI] No lyrics found');
       this.showYouTubeMusicFallback('Keine Lyrics gefunden');
       return;
     }
 
-    console.log('[LyricsUI] Lyrics loaded, synced:', result.hasSynced);
+    debugLog('[LyricsUI] Lyrics loaded, synced:', result.hasSynced);
 
     // Display synced lyrics if available
     if (result.hasSynced && result.synced && result.synced.length > 0) {
