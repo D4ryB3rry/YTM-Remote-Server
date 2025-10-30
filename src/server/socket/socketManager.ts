@@ -7,6 +7,7 @@ import { io as SocketIOClient, Socket as ClientSocket } from 'socket.io-client';
 import type { Server as HTTPServer } from 'http';
 import { config } from '../config.js';
 import type { AuthManager } from '../auth/authManager.js';
+import type { LyricsFetcher } from '../lyrics/lyricsFetcher.js';
 import type { PlayerState } from '@shared/types/index.js';
 
 export class SocketManager {
@@ -16,10 +17,12 @@ export class SocketManager {
   private lastBroadcastState: PlayerState | null = null;
   private lastBroadcastAt = 0;
   private readonly progressBroadcastIntervalMs: number;
+  private lastPrefetchedTrackKey: string | null = null;
 
   constructor(
     httpServer: HTTPServer,
-    private authManager: AuthManager
+    private authManager: AuthManager,
+    private lyricsFetcher: LyricsFetcher
   ) {
     // Initialize Socket.IO server for web clients
     this.io = new SocketIOServer(httpServer, {
@@ -78,6 +81,7 @@ export class SocketManager {
 
     this.ytmSocket.on('state-update', (state: PlayerState) => {
       this.currentState = state;
+      this.handleLyricsPrefetch(state);
       const now = Date.now();
       if (this.shouldBroadcastImmediately(state)) {
         this.emitStateUpdate(state, now);
@@ -101,6 +105,35 @@ export class SocketManager {
         this.authManager.deleteToken();
       }
     });
+  }
+
+  private handleLyricsPrefetch(state: PlayerState): void {
+    const artist = state.video?.author;
+    const title = state.video?.title;
+
+    if (!artist || !title) {
+      return;
+    }
+
+    const trackKey = this.getTrackKey(artist, title);
+    if (this.lastPrefetchedTrackKey === trackKey) {
+      return;
+    }
+
+    this.lastPrefetchedTrackKey = trackKey;
+    const expectedKey = trackKey;
+
+    setImmediate(() => {
+      if (this.lastPrefetchedTrackKey !== expectedKey) {
+        return;
+      }
+
+      this.lyricsFetcher.prefetch(artist, title);
+    });
+  }
+
+  private getTrackKey(artist: string, title: string): string {
+    return `${artist.trim().toLowerCase()}::${title.trim().toLowerCase()}`;
   }
 
   /**

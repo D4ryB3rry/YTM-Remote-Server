@@ -47,6 +47,9 @@ let currentLyricsTrack = null;
 let syncedLyricsData = null;
 let lyricsUpdateInterval = null;
 let currentActiveLyricIndex = -1;
+const lyricsCache = new Map();
+const pendingLyricsRequests = new Map();
+let lastPrefetchedLyricsKey = null;
 let lastAlbumArtUrl = '';
 
 // Socket.IO Events
@@ -68,6 +71,7 @@ socket.on('state-update', (state) => {
     console.log('State update received:', state);
     currentState = state;
     updateUI(state);
+    handleLyricsPrefetch(state);
 });
 
 // Update UI Status
@@ -128,6 +132,80 @@ function updateUI(state) {
     } else {
         stopProgressUpdates();
     }
+}
+
+function createLyricsTrackKey(artist, title) {
+    return `${artist.trim().toLowerCase()}::${title.trim().toLowerCase()}`;
+}
+
+function handleLyricsPrefetch(state) {
+    const artist = state?.video?.author;
+    const title = state?.video?.title;
+
+    if (!artist || !title) {
+        return;
+    }
+
+    const trackKey = createLyricsTrackKey(artist, title);
+    if (trackKey === lastPrefetchedLyricsKey) {
+        return;
+    }
+
+    lastPrefetchedLyricsKey = trackKey;
+    prefetchLyrics(artist, title);
+}
+
+function prefetchLyrics(artist, title) {
+    console.log('[Lyrics] Prefetch for:', artist, '-', title);
+    void getLyricsWithCache(artist, title);
+}
+
+async function getLyricsWithCache(artist, title, options = {}) {
+    const trackKey = createLyricsTrackKey(artist, title);
+    const cachedEntry = lyricsCache.get(trackKey);
+
+    if (cachedEntry) {
+        if (options.retryOnError && cachedEntry.error) {
+            lyricsCache.delete(trackKey);
+        } else {
+            console.log('[Lyrics] Using cached result for:', artist, '-', title);
+            return cachedEntry;
+        }
+    }
+
+    if (pendingLyricsRequests.has(trackKey)) {
+        return pendingLyricsRequests.get(trackKey);
+    }
+
+    const fetchPromise = (async () => {
+        try {
+            const response = await fetch(`/api/lyrics?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`);
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                const message = error.message || 'Keine Lyrics gefunden';
+                console.warn('[Lyrics] Prefetch failed:', message);
+                const entry = { data: null, error: message };
+                lyricsCache.set(trackKey, entry);
+                return entry;
+            }
+
+            const data = await response.json();
+            const entry = { data, error: null };
+            lyricsCache.set(trackKey, entry);
+            return entry;
+        } catch (error) {
+            console.error('[Lyrics] Failed to fetch lyrics:', error);
+            const entry = { data: null, error: 'Fehler beim Laden der Lyrics' };
+            lyricsCache.set(trackKey, entry);
+            return entry;
+        } finally {
+            pendingLyricsRequests.delete(trackKey);
+        }
+    })();
+
+    pendingLyricsRequests.set(trackKey, fetchPromise);
+    return fetchPromise;
 }
 
 // Update Album Art with better loading logic
@@ -435,7 +513,7 @@ async function loadLyrics(artist, title) {
     }
 
     // Don't reload if same track
-    const trackKey = `${artist}:${title}`;
+    const trackKey = createLyricsTrackKey(artist, title);
     if (currentLyricsTrack === trackKey && lyricsPanel.classList.contains('active')) {
         return;
     }
@@ -457,16 +535,15 @@ async function loadLyrics(artist, title) {
     `;
 
     try {
-        const response = await fetch(`/api/lyrics?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`);
-        
-        if (!response.ok) {
-            const error = await response.json();
-            showLyricsError(error.message || 'Keine Lyrics gefunden');
+        const entry = await getLyricsWithCache(artist, title, { retryOnError: true });
+
+        if (!entry || !entry.data) {
+            showLyricsError(entry?.error || 'Keine Lyrics gefunden');
             return;
         }
 
-        const data = await response.json();
-        
+        const data = entry.data;
+
         if (data.hasSynced && data.synced && data.synced.length > 0) {
             // Show synced lyrics
             syncedLyricsData = data.synced;

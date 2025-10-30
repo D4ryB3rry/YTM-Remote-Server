@@ -8,12 +8,11 @@ import type { YTMClient } from './api/ytmClient.js';
 import type { AuthManager } from './auth/authManager.js';
 import type { SocketManager } from './socket/socketManager.js';
 import type { CommandRequest } from '@shared/types/index.js';
-import { LyricsFetcher } from './lyrics/lyricsFetcher.js';
+import type { LyricsFetcher } from './lyrics/lyricsFetcher.js';
 import { PlaylistCache } from './cache/playlistCache.js';
 import { ImageCache } from './cache/imageCache.js';
 
 // Initialize singletons
-const lyricsFetcher = new LyricsFetcher();
 const playlistCache = PlaylistCache.getInstance();
 const imageCache = new ImageCache();
 
@@ -22,7 +21,8 @@ export function setupRoutes(
   ytmClient: YTMClient,
   authManager: AuthManager,
   socketManager: SocketManager,
-  initializeAuth: () => Promise<void>
+  initializeAuth: () => Promise<void>,
+  lyricsFetcher: LyricsFetcher
 ): void {
   /**
    * GET /api/status
