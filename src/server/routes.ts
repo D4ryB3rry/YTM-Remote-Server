@@ -10,10 +10,12 @@ import type { SocketManager } from './socket/socketManager.js';
 import type { CommandRequest } from '@shared/types/index.js';
 import { LyricsFetcher } from './lyrics/lyricsFetcher.js';
 import { PlaylistCache } from './cache/playlistCache.js';
+import { ImageCache } from './cache/imageCache.js';
 
 // Initialize singletons
 const lyricsFetcher = new LyricsFetcher();
 const playlistCache = PlaylistCache.getInstance();
+const imageCache = new ImageCache();
 
 export function setupRoutes(
   app: Express,
@@ -57,6 +59,17 @@ export function setupRoutes(
     }
 
     try {
+      const cachedImage = await imageCache.get(targetUrl);
+
+      if (cachedImage) {
+        res.setHeader('Content-Type', cachedImage.contentType);
+        res.setHeader(
+          'Cache-Control',
+          cachedImage.cacheControl || 'public, max-age=86400'
+        );
+        return res.send(cachedImage.buffer);
+      }
+
       const upstreamResponse = await fetch(parsedUrl);
 
       if (!upstreamResponse.ok || !upstreamResponse.body) {
@@ -65,17 +78,18 @@ export function setupRoutes(
           .json({ error: 'Failed to fetch image' });
       }
 
-      const contentType = upstreamResponse.headers.get('content-type');
-      if (contentType) {
-        res.setHeader('Content-Type', contentType);
-      }
-
-      const cacheControl = upstreamResponse.headers.get('cache-control');
-      if (cacheControl) {
-        res.setHeader('Cache-Control', cacheControl);
-      }
+      const contentType =
+        upstreamResponse.headers.get('content-type') || 'application/octet-stream';
+      const cacheControlHeader = upstreamResponse.headers.get('cache-control');
+      const cacheControl = cacheControlHeader || 'public, max-age=86400';
 
       const buffer = Buffer.from(await upstreamResponse.arrayBuffer());
+
+      await imageCache.set(targetUrl, buffer, contentType, cacheControl);
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', cacheControl);
+
       res.send(buffer);
     } catch (error) {
       console.error('[Proxy] Error fetching image:', error);
